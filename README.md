@@ -6,7 +6,7 @@ Um uso principal disso seria executar o R ​​em paralelo em várias máquinas
 
 No momento, as instruções utilizam o Cluster da RNP, mas essas instruções podem ser utilizadas no Google Kubernetes Engine, no Elastic Kubernetes Service da Amazon e também devem funcionar com o Microsoft Azure Kubernetes Service.
 
-O futuro pacote prevê computação paralela em R em uma ou mais máquinas.
+O pacote future prevê computação paralela em R em uma ou mais máquinas.
 
 - <https://cran.r-project.org/package=future>
 - <https://github.com/HenrikBengtsson/future>
@@ -18,17 +18,30 @@ Essas instruções dependem de dois repositórios do Github:
 
 Para visualizar o material que originou essas intruções acesse [future-kubernetes](https://github.com/paciorek/future-kubernetes).
 
-Eventually, I may add additional material to this repository, but for now the repository only contains these instructions.
-  
 ## Configurando e usando o cluster Kubernetes
 
+### Conceitos iniciais
+
+#### Pods
+Em suma, DESENVOLVER EXPLICAÇÃO.
+
+##### Worker
+Em suma, DESENVOLVER EXPLICAÇÃO.
+
+##### Scheduler (agendador)
+Em suma, DESENVOLVER EXPLICAÇÃO.
+
+#### Helm
+Em suma, DESENVOLVER EXPLICAÇÃO.
+
+#### Visão geral
 O gráfico abaixo mostra como a configuração será feita dentro do ambiente:
 
 <img src="k8s.jpg" alt="Overview of using future on a Kubernetes cluster" width="700"/>
 
-### Installing software to manage the cluster
+### Instalando o software para gerenciar o Cluster
 
-Finally you'll need to [install `helm`](https://helm.sh/docs/intro/install), which allows you to install packages on your Kubernetes cluster to set up the Kubernetes pods you'll need. These instructions assume either Helm version 3 (e.g., Helm 3.3.4 for [Mac](https://get.helm.sh/helm-v3.3.4-darwin-amd64.tar.gz) or [Windows](https://get.helm.sh/helm-v3.3.4-windows-amd64.zip) or Helm version 2 (e.g., Helm 2.16.3 for [Mac](https://get.helm.sh/helm-v2.16.3-darwin-amd64.tar.gz) or [Windows](https://get.helm.sh/helm-v2.16.3-windows-amd64.zip). 
+Você irá precisar [instalar o `helm`](https://helm.sh/docs/intro/install), que o permite instalar seus pacotes no Cluster Kubernetes para configurar os pods do Kubernetes necessários.
 
 <!--
 ### Starting a Kubernetes cluster
@@ -95,7 +108,7 @@ kubectl create rolebinding all-access \
 ```
 -->
 
-The following commands are only needed in older versions of Helm (Helm < 3.0.0), as Helm >= 3.0.0 does not use Tiller.
+Os comandos a seguir são necessários apenas em versões mais antigas do Helm (Helm < 3.0.0), pois o Helm >= 3.0.0 não usa o Tiller.
 
 ```
 ## Somente necessário para a versão do Helm < 3.0.0
@@ -105,16 +118,17 @@ helm init --service-account tiller --wait
 kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/command", "value": ["/tiller", "--listen=localhost:44134"]}]'
 ```
 
-Now we're ready to install the Helm chart that creates the pods (essentially containers) on the Kubernetes cluster. There will be one (scheduler) pod running RStudio Server and (by default) three pods running R workers. Make sure to choose your own name in place of <name-of-release>.
+Agora estamos prontos para instalar o Helm Chart que cria os pods (basicamente contêineres) no cluster do Kubernetes. Haverá um pod (agendador) executando o RStudio Server e (por padrão) três pods executando os R workers. Certifique-se de escolher seu próprio nome em vez de <nome-da-aplicacao>.
 
 ```
-git clone https://github.com/paciorek/future-helm-chart
-tar czf future-helm.tgz -C future-helm-chart .
-helm install --wait <name-of-release> ./future-helm.tgz
+git clone https://github.com/Vit0rGomes/future-helm-chart-rnp
+tar czf future-helm.tgz -C future-helm-chart-rnp .
+helm install --wait <nome-da-aplicacao> ./future-helm.tgz
 ```
 
-Note that in earlier versions of Helm (before version 3) one would not include 'name-of-release' and Helm would provide a name for the release (which will be of a form something like `ardent-porcupine`). A 'release' is an instance of a chart running in a Kubernetes cluster. In newer versions of Helm, you need to provide the name.
+Observe que em versões anteriores do Helm (antes da versão 3), não era incluído "nome-da-aplicacao" e o Helm fornecia um nome para a aplicação (que teria um formato parecido com `ardent-porcupine`). Uma "aplicação" é uma instância de um chart em execução em um cluster do Kubernetes. Em versões mais recentes do Helm, você precisa fornecer o nome.
 
+<!--
 Also note that if you are using Azure (no need to do this for Google or AWS), you will also need to invoke the following,
 
 ```
@@ -123,37 +137,38 @@ kubectl expose deployment future-scheduler --port=8787 --target-port=8787 --type
 
 where `8787` should be replaced by the value of `Values.scheduler.servicePort` from the `values.yml` file of the Helm chart, if you change that value from its default of 8787. My thanks to Deepak Rohila and Dayanand Arya of Nagarro for pointing this out.
 
-The `--wait` flag tells helm to wait until all the pods have started. Once that happens, you'll see a message about the release and how to connect to the RStudio interface. 
+-->
 
-Note: Below I have instructions for installing additional R packages on your cluster. If you install any packages that take a substantial amount of time (e.g., anything relying on Rcpp), it could take multiple minutes or more for the pods to start up. The RStudio interface would NOT be available during this time.
+O sinalizador `--wait` informa ao Helm para aguardar até que todos os pods sejam iniciados. Quando isso acontecer, você verá uma mensagem sobre o lançamento e como se conectar à interface do RStudio.
 
-You can check the pods are running with:
+Observação: Mais abaixo, tenho instruções para instalar pacotes R adicionais no seu cluster. Se você instalar pacotes que demorem bastante (por exemplo, qualquer pacote que dependa do Rcpp), a inicialização dos pods poderá levar vários minutos ou mais. A interface do RStudio NÃO estará disponível durante esse período.
+
+Você pode verificar se os pods estão em execução com:
 
 ```
-helm status <name-of-release>
+helm status <nome-da-aplicacao>
 kubectl get pods
 ```
 
-If you don't plan on modifying the chart, you can install the chart directly from the GitHub repository without cloning the repositoring and untarring it:
+Se você não planeja modificar o chart, pode instalá-lo diretamente do repositório do GitHub sem clonar o repositório e descompactá-lo:
 
 ```
 VERSION=0.1.3
 helm repo update
-helm install --wait <name-of-release> https://github.com/paciorek/future-helm-chart/archive/${VERSION}.tar.gz 
+helm install --wait <nome-da-aplicacao> https://github.com/Vit0rGomes/future-helm-chart-rnp/archive/${VERSION}.tar.gz 
 ```
 
-### Connecting to the the RStudio Server instance running in your cluster.
+### Conectando-se ao RStudio Server em execução no cluster da RNP.
 
-Once your pods have finished starting up, you can connect to your cluster via the RStudio Server instance running in the main pod on the cluster.
+Depois que seus pods forem inicializados, você poderá se conectar ao cluster por meio da instância do RStudio Server em execução no pod principal do cluster.
 
-Follow the instructions given in the message shown after you ran `helm install` above, namely:
+Siga as instruções fornecidas na mensagem exibida após a execução `helm install` acima, como:
 
 ```
-  export RSTUDIO_SERVER_IP="127.0.0.1"
-  export RSTUDIO_SERVER_PORT=8787
-  kubectl port-forward --namespace default svc/future-scheduler $RSTUDIO_SERVER_PORT:8787 &
+  kubectl get pods -o wide
+  # Pegar id do node do pod Schedueler
+  
 ```
-
 
 You can then connect to the RStudio Server instance by connecting to 127.0.0.1:8787 in a web browser tab. You can then login to RStudio using the username `rstudio` and password `future`.
 
