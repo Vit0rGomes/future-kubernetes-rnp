@@ -1,39 +1,36 @@
 # future-kubernetes
 
-Instructions for setting up and using a Kubernetes cluster for running R in parallel using the future package.
+Instruções para configurar e usar o Cluster Kubernetes para rodar o R em paralelo usando o pacote future.
 
-A primary use of this would be to run R in parallel across multiple virtual machines in the cloud. Kubernetes provides the infrastructure to set things up so that the main R process and all the R workers are running and able to communicate with each other. 
+Um uso principal disso seria executar o R ​​em paralelo em várias máquinas virtuais na nuvem. O Kubernetes fornece a infraestrutura para configurar tudo de forma que o processo principal do R e todos os workers do R estejam em execução e possam se comunicar entre si.
 
-At the moment, the instructions make use of Google Kubernetes Engine or Amazon's Elastic Kubernetes Service, but apart from the initial step of starting the cluster, I expect the other steps to work on other cloud providers' Kubernetes platforms. These instructions should also work with Microsoft Azure Kubernetes Service, 
+No momento, as instruções utilizam o Cluster da RNP, mas essas instruções podem ser utilizadas no Google Kubernetes Engine, no Elastic Kubernetes Service da Amazon e também devem funcionar com o Microsoft Azure Kubernetes Service.
 
-The future package provides for parallel computation in R on one or more machines.
+O futuro pacote prevê computação paralela em R em uma ou mais máquinas.
 
 - <https://cran.r-project.org/package=future>
 - <https://github.com/HenrikBengtsson/future>
 
-These instructions rely on two Github repositories under the hood:
+Essas instruções dependem de dois repositórios do Github:
 
-  - A [Docker container](https://github.com/paciorek/future-kubernetes-docker) that (slightly) extends the `rocker/rstudio` Docker container to add the `future` package.
-  - A [Helm chart](https://github.com/paciorek/future-helm-chart) based in large part on the [Dask helm chart](https://github.com/dask/helm-chart) that installs the Kubernetes pods, one (scheduler) pod running RStudio Server and acting as the main R process and (by default) three pods, each running one R worker process.
+  - A [contêiner Docker](https://github.com/paciorek/future-kubernetes-docker) que (ligeiramente) extende o conteiner do `rocker/rstudio` para adicionar o pacote `future`.
+  - A [Helm chart RNP](https://github.com/Vit0rGomes/future-helm-chart-rnp) baseado grande parte no [Helm chart](https://github.com/paciorek/future-helm-chart) que instala os pods Kubernetes, um (scheduler) pod executando o RStudio Server e atuando como o principal processo R e (por padrão) três pods, cada um deles executando um processo do R.
+
+Para visualizar o material que originou essas intruções acesse [future-kubernetes](https://github.com/paciorek/future-kubernetes).
 
 Eventually, I may add additional material to this repository, but for now the repository only contains these instructions.
   
-## Setting up and using your Kubernetes cluster
+## Configurando e usando o cluster Kubernetes
 
-The graphic below gives an overview of the workflow and components of the setup.
+O gráfico abaixo mostra como a configuração será feita dentro do ambiente:
 
 <img src="k8s.jpg" alt="Overview of using future on a Kubernetes cluster" width="700"/>
 
 ### Installing software to manage the cluster
 
-If using Google cloud, you'll need to [install the Google Cloud command line interface (CLI) tools](https://cloud.google.com/sdk/install). Once installed you should be able to use `gcloud` from the terminal. Alternatively, if using AWS, you'll need to [install the AWS EKS command line utility](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html). You may also need to [install the AWS command line interface (CLI) tools](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) and possibly run `aws configure`. Once installed you should be able to use `eksctl` from the terminal.
-
-You'll also need to [install `kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl) to manage your cluster.
-
 Finally you'll need to [install `helm`](https://helm.sh/docs/intro/install), which allows you to install packages on your Kubernetes cluster to set up the Kubernetes pods you'll need. These instructions assume either Helm version 3 (e.g., Helm 3.3.4 for [Mac](https://get.helm.sh/helm-v3.3.4-darwin-amd64.tar.gz) or [Windows](https://get.helm.sh/helm-v3.3.4-windows-amd64.zip) or Helm version 2 (e.g., Helm 2.16.3 for [Mac](https://get.helm.sh/helm-v2.16.3-darwin-amd64.tar.gz) or [Windows](https://get.helm.sh/helm-v2.16.3-windows-amd64.zip). 
 
-Note that you may be able to use the [Google Cloud Shell](https://shell.cloud.google.com) rather than installing the Google Cloud CLI or kubectl (but figuring out to set up port forwarding between your local machine and Google Cloud Shell would need to be addressed in order to connect to the RStudio Server instance). As far as AWS CloudShell, it doesn't appear to have `eksctl` or `kubectl` installed.
-
+<!--
 ### Starting a Kubernetes cluster
 
 In general you'll want to have as many R workers (set via the Helm chart - see below) as total CPUs (set here) on the cluster. 
@@ -76,6 +73,7 @@ eksctl create cluster \
 
 This asks for three t2.small (1 CPU) virtual machines. If you had instead asked for `t2.medium` (two CPUs per node) and three nodes, you'd want to have six R workers.
 
+
 ### Configuring your Kubernetes cluster
 
 Now you need to run `kubectl` commands to modify your cluster. 
@@ -95,11 +93,12 @@ kubectl create rolebinding all-access \
    --clusterrole=cluster-admin \
    --serviceaccount=default:default
 ```
+-->
 
 The following commands are only needed in older versions of Helm (Helm < 3.0.0), as Helm >= 3.0.0 does not use Tiller.
 
 ```
-## Only needed in Helm version < 3.0.0
+## Somente necessário para a versão do Helm < 3.0.0
 kubectl --namespace kube-system create serviceaccount tiller
 kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
 helm init --service-account tiller --wait
